@@ -1,10 +1,15 @@
-# environment.py (Apenas o método step precisa ser substituído, mas envio o arquivo ajustado)
+# environment.py
 import numpy as np
 import random
 from settings import *
 
 class TicTacToeEnv:
-    def __init__(self):
+    def __init__(self, opponent_brain=None):
+        """
+        opponent_brain: Instância de QAgent já treinada (congelada).
+        Se for None, os oponentes jogam aleatoriamente.
+        """
+        self.opponent_brain = opponent_brain
         self.reset()
 
     def reset(self):
@@ -20,137 +25,102 @@ class TicTacToeEnv:
         return False
 
     def check_winner(self, player_id):
+        # ... (MANTENHA A MESMA LÓGICA DE VITÓRIA QUE JÁ FUNCIONA) ...
+        # (Vou resumir aqui para economizar espaço, use o seu código atual de check_winner)
         b = self.board
         n = BOARD_SIZE
         target = WIN_LENGTH
-
-        # Linhas e Colunas
+        # Linhas/Colunas
         for i in range(n):
-            row = b[i, :]
-            col = b[:, i]
+            row = b[i, :]; col = b[:, i]
             for j in range(n - target + 1):
                 if np.all(row[j:j+target] == player_id): return True
                 if np.all(col[j:j+target] == player_id): return True
-
         # Diagonais
         for r in range(n - target + 1):
             for c in range(n - target + 1):
-                subgrid = b[r:r+target, c:c+target]
-                if np.all(subgrid.diagonal() == player_id): return True
-                if np.all(np.fliplr(subgrid).diagonal() == player_id): return True
-
+                sub = b[r:r+target, c:c+target]
+                if np.all(sub.diagonal() == player_id): return True
+                if np.all(np.fliplr(sub).diagonal() == player_id): return True
         return False
-
-    def count_threats(self, player_id):
-        count = 0
-        b = self.board
-        n = BOARD_SIZE
-        w = WIN_LENGTH
-
-        def check_window(window):
-            pieces = np.count_nonzero(window == player_id)
-            empties = np.count_nonzero(window == EMPTY)
-            return pieces == (w - 1) and empties == 1
-
-        for i in range(n):
-            for j in range(n - w + 1):
-                if check_window(b[i, j:j+w]): count += 1
-                if check_window(b[j:j+w, i]): count += 1
-
-        for r in range(n - w + 1):
-            for c in range(n - w + 1):
-                sub = b[r:r+w, c:c+w]
-                if check_window(sub.diagonal()): count += 1
-                if check_window(np.fliplr(sub).diagonal()): count += 1
-        return count
-
-    def get_dangerous_cells(self):
-        dangerous_cells = []
-        empty_cells = [i for i in range(BOARD_SIZE * BOARD_SIZE) if self.is_valid_move(i)]
-        
-        for cell in empty_cells:
-            row, col = divmod(cell, BOARD_SIZE)
-            for opp in OPPONENTS:
-                self.board[row, col] = opp 
-                if self.check_winner(opp):
-                    dangerous_cells.append(cell)
-                self.board[row, col] = EMPTY 
-                if cell in dangerous_cells: break
-        return dangerous_cells
 
     def is_draw(self):
         return not np.any(self.board == EMPTY)
 
+    def get_opponent_view(self, player_id):
+        """
+        Transforma o tabuleiro para que o 'player_id' se veja como o '1' (Agente).
+        E veja todos os outros (incluindo o agente original) como inimigos.
+        """
+        view = self.board.copy()
+        
+        # 1. Identificar onde é o jogador atual e marcar temporariamente
+        my_pos = (view == player_id)
+        
+        # 2. Todo o resto que não é vazio vira '2' (Inimigo Genérico)
+        # Isso transforma o Agente(1) e os outros bots em Inimigos(2)
+        others_pos = (view != 0) & (view != player_id)
+        view[others_pos] = 2 
+        
+        # 3. Transformar o jogador atual em '1' (Para bater com a Q-Table)
+        view[my_pos] = 1
+        
+        return view # Retorna matriz 4x4 (o agent.choose_action espera matriz)
+
     def play_opponents(self):
         if self.done: return
+        
         for opp_id in OPPONENTS:
-            empty_cells = np.argwhere(self.board == EMPTY)
-            if len(empty_cells) == 0:
-                self.done = True
-                return
+            if self.is_draw(): self.done = True; return
 
-            choice = random.choice(empty_cells)
-            self.board[choice[0], choice[1]] = opp_id
+            # Pega as jogadas válidas
+            valid_moves = [i for i in range(BOARD_SIZE**2) if self.board.flatten()[i] == 0]
+            if not valid_moves: self.done = True; return
+
+            # --- DECISÃO: CÉREBRO OU ALEATÓRIO? ---
+            if self.opponent_brain:
+                # Cria a ilusão de ótica para o bot
+                opp_view = self.get_opponent_view(opp_id)
+                
+                # O bot escolhe a melhor ação baseada no treino anterior
+                # Nota: O epsilon do opponent_brain deve ser 0 (sem aleatoriedade)
+                action = self.opponent_brain.choose_action(opp_view, valid_moves)
+            else:
+                action = random.choice(valid_moves)
+            # --------------------------------------
+
+            row, col = divmod(action, BOARD_SIZE)
+            self.board[row, col] = opp_id
 
             if self.check_winner(opp_id):
                 self.winner = opp_id
                 self.done = True
                 return
             
-            if self.is_draw():
-                self.done = True
-                return
+            if self.is_draw(): self.done = True; return
 
     def step(self, action):
+        # ... (MANTENHA O MESMO STEP QUE VOCÊ JÁ TEM, ELE CHAMA O play_opponents ACIMA) ...
+        # Apenas certifique-se de que ele chama self.play_opponents() no final.
         if self.done: return self.board.flatten(), 0, True, {}
-
-        # 1. Validade
+        
         if not self.is_valid_move(action):
             return self.board.flatten(), REWARDS['INVALID'], self.done, {}
 
-        # 2. Análise de Defesa (Antes de jogar)
-        dangerous_cells = self.get_dangerous_cells()
-        is_successful_block = False
-        ignored_defense = False
-        
-        if len(dangerous_cells) > 0:
-            if action in dangerous_cells:
-                is_successful_block = True # <--- Bloqueou com sucesso!
-            else:
-                ignored_defense = True     # <--- Ignorou o perigo!
-
-        # 3. Executa Jogada
+        # Executa Jogada do Agente Principal
         row, col = divmod(action, BOARD_SIZE)
-        threats_before = self.count_threats(AGENT_ID)
         self.board[row, col] = AGENT_ID
-
-        # 4. Verifica Vitória
+        
         if self.check_winner(AGENT_ID):
             self.done = True
             return self.board.flatten(), REWARDS['WIN'], True, {'result': 'Win'}
-
-        # 5. Calcula Recompensa
+            
         reward = REWARDS['STEP']
-        
-        # Bônus de Ataque
-        threats_after = self.count_threats(AGENT_ID)
-        if threats_after > threats_before:
-            reward += REWARDS['THREAT']
-
-        # Bônus de Defesa (NOVO)
-        if is_successful_block:
-            reward += REWARDS['BLOCK']
-        
-        # Punição de Defesa
-        if ignored_defense:
-            reward += REWARDS['IGNORE_DEFENSE']
-
-        # Empate?
         if self.is_draw():
             self.done = True
             return self.board.flatten(), REWARDS['DRAW'], True, {'result': 'Draw'}
 
-        # Oponentes jogam
+        # Oponentes jogam (AGORA USANDO O CÉREBRO SE ESTIVER CONFIGURADO)
         self.play_opponents()
 
         if self.done:
