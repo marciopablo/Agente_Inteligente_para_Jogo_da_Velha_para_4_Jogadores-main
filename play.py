@@ -10,7 +10,6 @@ def print_board(board):
     Função auxiliar para desenhar o tabuleiro bonito no terminal.
     Substitui os números 0, 1, 2... pelos símbolos ., X, O...
     """
-    # Limpa a tela (funciona em Linux/Mac/Windows)
     os.system('cls' if os.name == 'nt' else 'clear')
     
     print(f"--- Jokenpo 4 Players AI ---")
@@ -25,21 +24,17 @@ def print_board(board):
     print("-" * 25)
 
 def play_demonstration():
-    # 1. Carrega o Ambiente e o Agente
     env = TicTacToeEnv()
     agent = QAgent()
     
-    # 2. Carrega o cérebro treinado
     if os.path.exists("brain.pkl"):
         agent.load_model("brain.pkl")
     else:
         print("❌ Erro: brain.pkl não encontrado. Rode o train.py primeiro!")
         return
 
-    # 3. Configura para modo "Sério" (Sem exploração aleatória)
     agent.epsilon = 0.0 
     
-    # Loop de partidas (Jogar 5 vezes para demonstrar)
     for game in range(1, 6):
         state = env.reset()
         state_matrix = env.board
@@ -52,9 +47,8 @@ def play_demonstration():
             print_board(env.board)
             print(f"Turno: {step_count}")
             print("Agente (X) pensando...")
-            time.sleep(1.5) # Pausa dramática para ver o jogo
+            time.sleep(1.5) 
             
-            # Agente escolhe a melhor jogada baseada no que aprendeu
             valid_moves = [i for i in range(BOARD_SIZE**2) if env.is_valid_move(i)]
             
             if not valid_moves:
@@ -63,13 +57,11 @@ def play_demonstration():
                 
             action = agent.choose_action(state_matrix, valid_moves)
             
-            # Ambiente executa (Agente + 3 Oponentes)
             next_state_flat, reward, done, info = env.step(action)
             state_matrix = env.board
             
             step_count += 1
             
-        # Mostra o estado final
         print_board(env.board)
         
         if info.get('result') == 'Win':

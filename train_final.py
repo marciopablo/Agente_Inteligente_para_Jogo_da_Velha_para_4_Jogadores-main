@@ -10,10 +10,8 @@ def train_grandmaster():
     print("👑 INICIANDO O TREINO SUPREMO (BATTLE ROYALE) 👑")
     print("Cenário: [2: Elite] | [3: Veterano] | [4: Louco]")
     
-    # --- 1. PREPARAR A MESA DE OPONENTES ---
     brains_map = {}
     
-    # Oponente 2: Tenta carregar o Elite (Fase 2)
     if os.path.exists("brain_v2_elite.pkl"):
         print("💀 [Assento 2] Mestre Elite: CARREGADO")
         bot_elite = QAgent()
@@ -22,7 +20,6 @@ def train_grandmaster():
     else:
         print("⚠️ [Assento 2] Elite não encontrado -> Usando Aleatório.")
 
-    # Oponente 3: Tenta carregar o Veterano (Fase 1)
     if os.path.exists("brain.pkl"):
         print("🤖 [Assento 3] Veterano: CARREGADO")
         bot_veteran = QAgent()
@@ -31,13 +28,10 @@ def train_grandmaster():
     else:
         print("⚠️ [Assento 3] Veterano não encontrado -> Usando Aleatório.")
         
-    # Oponente 4: Sempre Aleatório (O fator Caos)
     brains_map[4] = None 
 
-    # --- 2. PREPARAR O NOSSO CAMPEÃO ---
     champion = QAgent()
     
-    # Ele deve continuar evoluindo do ponto mais forte que você tiver
     if os.path.exists("brain_v2_elite.pkl"):
         print("🛡️ Campeão: Continuando do nível Elite...")
         champion.load_model("brain_v2_elite.pkl")
@@ -47,18 +41,15 @@ def train_grandmaster():
     else:
         print("🐣 Campeão: Começando do zero (Vai demorar mais).")
     
-    # Ajuste Fino: Curiosidade baixa, aprendizado cirúrgico
     champion.epsilon = 0.2  
     champion.alpha = 0.05   
 
-    # INICIALIZA O AMBIENTE COM A MESA MISTA
     env = TicTacToeEnv(opponent_brains=brains_map)
     
     print("-" * 50)
     start_time = time.time()
     recent_wins = [] 
     
-    # Loop de Treino
     for episode in range(1, EPISODES + 1):
         state = env.reset()
         state_matrix = env.board.copy()
@@ -70,18 +61,16 @@ def train_grandmaster():
 
             action = champion.choose_action(state_matrix, valid_moves)
             
-            # Environment escolhe quem joga contra (Elite, Veterano ou Random)
             next_state_flat, reward, done, info = env.step(action)
             next_state_matrix = env.board.copy()
 
             champion.learn(state_matrix, action, reward, next_state_matrix)
             state_matrix = next_state_matrix
 
-        # Estatísticas
         if info.get('result') == 'Win':
             recent_wins.append(1)
         else:
-            recent_wins.append(0) # Derrota ou Empate = 0
+            recent_wins.append(0) 
             
         if len(recent_wins) > 1000: recent_wins.pop(0)
 
@@ -97,7 +86,6 @@ def train_grandmaster():
     print("-" * 50)
     print(f"✅ TREINO SUPREMO CONCLUÍDO ({total_time:.1f}s)")
     
-    # Salva o arquivo FINAL DEFINITIVO
     champion.save_model("brain_final_boss.pkl")
     print("💾 CÉREBRO FINAL SALVO: 'brain_final_boss.pkl'")
 

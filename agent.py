@@ -7,7 +7,7 @@ class QAgent:
     def __init__(self):
         self.q_table = {} 
         self.epsilon = EPSILON_START
-        self.alpha = ALPHA_START # <--- Agora usa o valor inicial definido
+        self.alpha = ALPHA_START 
         self.gamma = DISCOUNT_FACTOR
 
     def get_symmetry_info(self, board):
@@ -52,8 +52,6 @@ class QAgent:
             canon_move = self.map_action_to_canonical(move, rot, flip)
             real_q_values[move] = canonical_q_values[canon_move]
         
-        # OTIMIZAÇÃO: Quebra de empate aleatória
-        # Se houver múltiplas melhores jogadas com o mesmo valor, escolhe uma ao acaso
         max_value = np.max(real_q_values)
         best_moves = [i for i, v in enumerate(real_q_values) if v == max_value]
         return random.choice(best_moves)

@@ -17,7 +17,6 @@ def train():
     recent_wins = [] 
     
     for episode in range(1, EPISODES + 1):
-        # MODO DE TESTE FINAL: Desliga aleatoriedade nos últimos 5% dos jogos
         if episode > EPISODES * 0.95:
             agent.epsilon = 0.0
 
@@ -36,7 +35,6 @@ def train():
             agent.learn(state_matrix, action, reward, next_state_matrix)
             state_matrix = next_state_matrix.copy()
 
-        # Estatísticas
         if info.get('result') == 'Win':
             recent_wins.append(1)
         else:
@@ -45,7 +43,6 @@ def train():
         if len(recent_wins) > 1000:
             recent_wins.pop(0)
 
-        # Decaimento padrão (só acontece se não estivermos no modo de teste final)
         if episode <= EPISODES * 0.95:
             if agent.epsilon > EPSILON_MIN:
                 agent.epsilon *= EPSILON_DECAY
@@ -55,7 +52,6 @@ def train():
         if episode % 1000 == 0:
             win_rate = sum(recent_wins) / len(recent_wins) * 100
             
-            # Marcador visual para saber se está no modo "Validação Pura"
             mode = "TESTE" if agent.epsilon == 0.0 else "TREINO"
             
             print(f"Episódio {episode:6d} [{mode}] | "

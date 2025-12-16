@@ -6,7 +6,6 @@ from settings import *
 from environment import TicTacToeEnv
 from agent import QAgent
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Arena Neural 4x4",
     page_icon="🧠",
@@ -14,7 +13,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; }
@@ -63,11 +61,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MAPA DE SÍMBOLOS (ATUALIZADO) ---
-# 0: Vazio, 1: IA, 2: Humano, 3: Bot Monstro, 4: Bot Alien
 SYMBOLS_MAP = {0: " ", 1: "🤖", 2: "😎", 3: "👾", 4: "👽"}
 
-# --- LÓGICA DO JOGO ---
 
 def manual_step(action, player_id):
     """Executa jogada lógica"""
@@ -81,7 +76,6 @@ def manual_step(action, player_id):
         return True, {'result': 'Draw'}
     return False, {}
 
-# --- INICIALIZAÇÃO ---
 if 'env' not in st.session_state:
     st.session_state.env = TicTacToeEnv()
     st.session_state.board = st.session_state.env.board
@@ -97,7 +91,6 @@ if 'env' not in st.session_state:
     except:
         pass
 
-# --- BARRA LATERAL ---
 with st.sidebar:
     st.title("⚙️ Painel")
     st.markdown("---")
@@ -116,21 +109,18 @@ with st.sidebar:
         st.session_state.turn_counter = 0
         st.rerun()
 
-# --- ABERTURA DA IA ---
 if st.session_state.turn_counter == 0 and not st.session_state.game_over:
     env = st.session_state.env
     agent = st.session_state.agent
     
     empty = [i for i in range(BOARD_SIZE**2) if env.is_valid_move(i)]
     
-    # IA Joga Primeiro
     action = agent.choose_action(env.board, empty)
-    manual_step(action, 1) # Jogador 1 (IA)
+    manual_step(action, 1)
     
     st.session_state.turn_counter += 1
     st.session_state.status_text = "IA fez a abertura. Sua vez! (😎)"
 
-# --- FUNÇÕES DE RENDERIZAÇÃO ---
 
 def render_board(placeholder, interaction_enabled=True):
     """Desenha o grid 4x4"""
@@ -159,14 +149,12 @@ def run_turn_sequence(placeholder, human_action):
     env = st.session_state.env
     st.session_state.turn_counter += 1
     
-    # 1. JOGADA HUMANA
     done, info = manual_step(human_action, 2)
     st.session_state.status_text = "Você jogou... Aguarde."
     render_board(placeholder, interaction_enabled=False) 
     
     if check_end(done, info, "VOCÊ VENCEU!", "human"): return
 
-    # 2. BOTs e IA (Sequência: Bot 3 -> Bot 4 -> IA)
     opponents = [3, 4, 1] 
     
     for player in opponents:
@@ -213,7 +201,6 @@ def check_end(done, info, msg, winner_type):
         return True
     return False
 
-# --- INTERFACE PRINCIPAL ---
 
 st.title("🧠 Velha Neural")
 

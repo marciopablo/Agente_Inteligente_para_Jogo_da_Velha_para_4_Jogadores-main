@@ -5,3 +5,6 @@
  python play.py
 
  streamlit run app.py
+
+ # Dependencias para rodar o programa
+ pip install streamlit numpy

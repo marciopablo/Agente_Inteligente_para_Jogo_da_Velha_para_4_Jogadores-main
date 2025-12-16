@@ -15,8 +15,6 @@ def run_random_games(num_games=100):
         done = False
         
         while not done:
-            # Agente "Burro": Escolhe qualquer número de 0 a 15
-            # Isso vai testar se a lógica de 'Jogada Inválida' funciona também
             action = random.randint(0, (BOARD_SIZE * BOARD_SIZE) - 1)
             
             next_state, reward, done, info = env.step(action)
@@ -24,7 +22,7 @@ def run_random_games(num_games=100):
             if done:
                 if 'result' in info:
                     stats[info['result']] += 1
-                elif reward == -50: # Se o jogo acabar por muitas jogadas invalidas (opcional)
+                elif reward == -50: 
                      stats['Invalid'] += 1
 
     end_time = time.time()

@@ -10,7 +10,6 @@ class TicTacToeEnv:
         Exemplo: {2: elite_brain, 3: basic_brain, 4: None}
         Se a chave não existir ou for None, joga Aleatório.
         """
-        # ATUALIZAÇÃO: Aceita um dicionário, não apenas um único cérebro
         self.opponent_brains = opponent_brains if opponent_brains else {}
         self.reset()
 
@@ -31,7 +30,6 @@ class TicTacToeEnv:
         n = BOARD_SIZE
         target = WIN_LENGTH
 
-        # 1. Checar Linhas e Colunas
         for i in range(n):
             row = b[i, :]
             col = b[:, i]
@@ -39,7 +37,6 @@ class TicTacToeEnv:
                 if np.all(row[j : j + target] == player_id): return True
                 if np.all(col[j : j + target] == player_id): return True
 
-        # 2. Checar Diagonais
         for r in range(n - target + 1):
             for c in range(n - target + 1):
                 sub_grid = b[r : r + target, c : c + target]
@@ -58,23 +55,19 @@ class TicTacToeEnv:
         """
         view = self.board.copy()
         
-        # 1. Identificar onde é o jogador atual
         my_pos = (view == player_id)
         
-        # 2. Todo o resto que não é vazio vira '2' (Inimigo Genérico)
         others_pos = (view != 0) & (view != player_id)
         view[others_pos] = 2 
         
-        # 3. Transformar o jogador atual em '1' (Para bater com a Q-Table)
         view[my_pos] = 1
         
-        return view # Retorna matriz 4x4
+        return view 
 
     def play_opponents(self):
         if self.done: return
         
         for opp_id in OPPONENTS:
-            # Checa empate antes de cada movimento
             if self.is_draw(): 
                 self.done = True
                 return
@@ -84,23 +77,17 @@ class TicTacToeEnv:
                 self.done = True
                 return
 
-            # --- LÓGICA DO BATTLE ROYALE ---
-            # Verifica se existe um cérebro específico para este ID na mesa
             brain = self.opponent_brains.get(opp_id)
             
             if brain:
-                # Se tem cérebro, usa a visão inteligente
                 opp_view = self.get_opponent_view(opp_id)
                 
-                # Garante que ele jogue sério (sem errar de propósito)
                 old_eps = brain.epsilon
                 brain.epsilon = 0.0
                 action = brain.choose_action(opp_view, valid_moves)
-                brain.epsilon = old_eps # Restaura configuração original
+                brain.epsilon = old_eps 
             else:
-                # Se for None (ou não estiver no dict), joga o CAOS (Aleatório)
                 action = random.choice(valid_moves)
-            # -------------------------------
 
             row, col = divmod(action, BOARD_SIZE)
             self.board[row, col] = opp_id
@@ -117,11 +104,9 @@ class TicTacToeEnv:
     def step(self, action):
         if self.done: return self.board.flatten(), 0, True, {}
         
-        # 1. Validade
         if not self.is_valid_move(action):
             return self.board.flatten(), REWARDS['INVALID'], self.done, {}
 
-        # 2. Executa Jogada do Agente Principal
         row, col = divmod(action, BOARD_SIZE)
         self.board[row, col] = AGENT_ID
         
@@ -134,7 +119,6 @@ class TicTacToeEnv:
             self.done = True
             return self.board.flatten(), REWARDS['DRAW'], True, {'result': 'Draw'}
 
-        # 3. Oponentes jogam (Usando lógica mista definida no init)
         self.play_opponents()
 
         if self.done:
